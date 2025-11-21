@@ -1,0 +1,47 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Compiled extensions
+*.so
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+
+# IDE / editor settings
+.vscode/
+.idea/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Data files (raw / large)
+data/
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.parquet
+*.h5
+
+# Environment / secrets
+.env
+*.env
+
+# Backup / temporary files
+*.bak
+*.swp
+*.tmp
