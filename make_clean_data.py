@@ -3,9 +3,8 @@ from pathlib import Path
 import pandas as pd
 
 #URL for data: https://www.nsf.gov/awardsearch/download-awards/
-# ---------------------------------------------------------
+
 # 1. Set base paths and detect all year folders
-# ---------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent   # folder where this script is located
 DATA_DIR = BASE_DIR / "data"
 
@@ -13,9 +12,9 @@ DATA_DIR = BASE_DIR / "data"
 YEARS = [p.name for p in DATA_DIR.iterdir() if p.is_dir()]
 
 
-# ---------------------------------------------------------
+
 # 2. Function to extract relevant fields from a single JSON file
-# ---------------------------------------------------------
+
 def parse_grant_json(json_path: Path) -> dict:
     """Read a single NSF grant JSON file and return a flattened dict with selected fields."""
     with open(json_path, "r", encoding="utf-8") as f:
@@ -23,7 +22,7 @@ def parse_grant_json(json_path: Path) -> dict:
 
     row = {}
 
-    # --- simple top-level fields ---
+    # Simple top-level fields
     row["awd_id"] = data.get("awd_id")
     row["agcy_id"] = data.get("agcy_id")
     row["awd_titl_txt"] = data.get("awd_titl_txt")
@@ -51,14 +50,14 @@ def parse_grant_json(json_path: Path) -> dict:
     # additional attribute (for Q6)
     row["cfda_num"] = data.get("cfda_num")
 
-    # --- institution info ---
+    # Institution info
     inst = data.get("inst") or {}
     row["inst_name"] = inst.get("inst_name")
     row["inst_city_name"] = inst.get("inst_city_name")
     row["inst_state_code"] = inst.get("inst_state_code")
     row["inst_country_name"] = inst.get("inst_country_name")
 
-    # --- performing institution ---
+    # Performing institution
     perf = data.get("perf_inst") or {}
     row["perf_inst_name"] = perf.get("perf_inst_name")
     row["perf_city_name"] = perf.get("perf_city_name")
@@ -76,12 +75,12 @@ def parse_grant_json(json_path: Path) -> dict:
         row["pi_full_name"] = None
         row["pi_email_addr"] = None
 
-    # --- program elements ---
+    # Program elements
     pgm_ele = data.get("pgm_ele") or []
     row["pgm_ele_codes"] = ";".join(str(e.get("pgm_ele_code", "")) for e in pgm_ele if e) or None
     row["pgm_ele_names"] = ";".join(str(e.get("pgm_ele_name", "")) for e in pgm_ele if e) or None
 
-    # --- obligated funding info ---
+    # Obligated funding info
     oblg_list = data.get("oblg_fy") or []
     if oblg_list:
         first_oblg = oblg_list[0]
@@ -94,9 +93,9 @@ def parse_grant_json(json_path: Path) -> dict:
     return row
 
 
-# ---------------------------------------------------------
+
 # 3. Loop through all years, parse JSON files, and save one CSV per year
-# ---------------------------------------------------------
+
 def build_yearly_csvs():
     for year in YEARS:
         year_dir = DATA_DIR / year
