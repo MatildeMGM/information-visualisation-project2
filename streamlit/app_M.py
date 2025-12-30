@@ -1,6 +1,15 @@
-# -----------------------------
+
+import re
+import pandas as pd
+import altair as alt
+import streamlit as st
+from pathlib import Path
+from vega_datasets import data
+
+
+
 # Safety checks
-# -----------------------------
+# 
 required = ["df_merged", "state_year", "dir_year_merged"]
 missing = [name for name in required if name not in globals()]
 
@@ -217,9 +226,9 @@ legend_labels = (
 
 q1_chart = alt.layer(q1_map, legend_title, legend_bubbles, legend_labels).properties(width=420, height=260)
 
-# -----------------------------
+# 
 # Q2/Q3 — Directorates (selected year) with toggles
-# -----------------------------
+# 
 chart_height = 260
 bubble_y = chart_height / 2
 

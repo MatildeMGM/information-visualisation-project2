@@ -197,7 +197,7 @@ def chart_q1(state_year: pd.DataFrame, year: int) -> alt.Chart:
     )
 
     q1_base = (
-        alt.Chart(state_year, title="Q1 — Grants per state")
+        alt.Chart(state_year)
         .transform_filter(alt.datum.year == year)
         .transform_lookup(
             lookup="state_name",
@@ -232,7 +232,7 @@ def chart_q23(dir_year_merged: pd.DataFrame, year: int, show_total: bool, show_t
     bubble_y = chart_height * 0.3
 
     bubbles = (
-        alt.Chart(dir_year_merged, title="Q2/Q3 — Grants & terminated per directorate")
+        alt.Chart(dir_year_merged)
         .transform_filter(alt.datum.year == year)
         .mark_circle()
         .encode(
@@ -345,7 +345,7 @@ def chart_q4(df_merged: pd.DataFrame, year_selected: int) -> alt.Chart:
         .encode(x="month_date:T")
     )
 
-    return (highlight + line + year_lines).properties(height=200, title="Q4 — Total amount per month (2021–2025) (drag to zoom)")
+    return (highlight + line + year_lines).properties(height=200)
 
 
 def chart_q5(df_merged: pd.DataFrame, selected_state: str, show_term: bool) -> alt.Chart:
@@ -415,54 +415,65 @@ def chart_q5(df_merged: pd.DataFrame, selected_state: str, show_term: bool) -> a
 
     return (bars + line + points).resolve_scale(y="independent").properties(
         height=220,
-        title="Q5 — Grants over time (state / All) + terminated bars (drag to zoom)"
     )
 
 
 def chart_q6(df_merged: pd.DataFrame, year: int, directorate: str) -> alt.Chart:
-    required = ["n_pi", "awd_amount", "status", "awd_id", "inst_name", "inst_state_code", "dir_abbr", "year"]
+    required = ["n_pi", "awd_amount", "status", "awd_id", "inst_name",
+                "inst_state_code", "dir_abbr", "year"]
     missing = [c for c in required if c not in df_merged.columns]
     if missing:
         raise KeyError("df_merged missing columns for Q6: " + ", ".join(missing))
 
     df = df_merged.copy()
+
+    # (Robust) make sure numeric for log scale + jitter
+    df["awd_amount"] = pd.to_numeric(df["awd_amount"], errors="coerce")
+    df["n_pi"] = pd.to_numeric(df["n_pi"], errors="coerce")
+
     df["status_label"] = df["status"].map({True: "Cancelled", False: "Active"}).fillna("Unknown")
 
     base = (
         alt.Chart(df)
-        .transform_filter(
-            (alt.datum.year == year)
-            & (alt.datum.dir_abbr == directorate)
-            & (alt.datum.awd_amount > 0)
-        )
-        .transform_calculate(x_jitter="datum.n_pi + (random() - 0.5) * 0.35")
+        .transform_filter(alt.datum.year == year)
+        .transform_filter(alt.datum.dir_abbr == directorate)
+        .transform_filter(alt.datum.awd_amount != None)
+        .transform_filter(alt.datum.n_pi != None)
+        .transform_filter(alt.datum.awd_amount > 0)
+        .transform_filter(alt.datum.n_pi >= 1)
+        .transform_filter(alt.datum.n_pi <= 15)
+        .transform_calculate(x_jitter="datum.n_pi + (random() - 0.5) * 0.25")
     )
 
     return (
-        base.mark_circle(opacity=0.6, size=55)
+        base.mark_circle(opacity=0.25, size=18)
         .encode(
-            x=alt.X("x_jitter:Q", title="Number of PIs", axis=alt.Axis(values=list(range(1, 11)), labelAngle=0)),
+            x=alt.X("x_jitter:Q", title="Number of PIs"),
             y=alt.Y(
                 "awd_amount:Q",
                 title="Award amount (USD, log)",
                 scale=alt.Scale(type="log", nice=False),
-                axis=alt.Axis(format="~s", tickCount=6)
+                axis=alt.Axis(format="~s", tickCount=6),
             ),
             color=alt.Color(
                 "status_label:N",
-                scale=alt.Scale(domain=["Active", "Cancelled"], range=[COL_TOTAL, COL_TERM]),
-                legend=None
+                scale=alt.Scale(
+                    domain=["Active", "Cancelled", "Unknown"],
+                    range=[COL_TOTAL, COL_TERM, "#9CA3AF"],
+                ),
+                legend=None,
             ),
             tooltip=[
                 alt.Tooltip("awd_id:N", title="Award ID"),
                 alt.Tooltip("inst_name:N", title="Institution"),
                 alt.Tooltip("inst_state_code:N", title="State"),
+                alt.Tooltip("year:O", title="Year"),
                 alt.Tooltip("n_pi:Q", title="Number of PIs"),
                 alt.Tooltip("awd_amount:Q", title="Award amount", format=",.0f"),
                 alt.Tooltip("status_label:N", title="Status"),
             ],
         )
-        .properties(height=300, title="Q6 — Award amount vs collaboration (Year + Directorate)")
+        .properties(height=300)
     )
 
 
@@ -483,20 +494,48 @@ states = ["All"] + sorted(pd.Series(df_merged["state_x"]).dropna().astype(str).u
 st.sidebar.header("Filters")
 selected_year = st.sidebar.selectbox("Year", options=years, index=len(years) - 1)
 selected_state = st.sidebar.selectbox("State", options=states, index=0)
-selected_dir = st.sidebar.selectbox("Directorate", options=dirs, index=0)
+default_dir = "BIO"
+dir_index = dirs.index(default_dir) if default_dir in dirs else 0
+selected_dir = st.sidebar.selectbox("Directorate", options=dirs, index=dir_index)
 show_total = st.sidebar.checkbox("Show total (blue)", value=True)
 show_term = st.sidebar.checkbox("Show terminated (red)", value=True)
 
 left, right = st.columns(2, gap="large")
 
 with left:
+    st.subheader("Q1 — Grants per state")
     st.altair_chart(chart_q1(state_year, selected_year), width="stretch")
+
+    st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
+
+    st.subheader("Q4 — Total amount per month (2021–2025) (drag to zoom)")
     st.altair_chart(chart_q4(df_merged, selected_year), width="stretch")
+
+    st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
+
+    st.subheader("Q5 — Grants over time (state / All) + terminated bars (drag to zoom)")
     st.altair_chart(chart_q5(df_merged, selected_state, show_term), width="stretch")
 
+
 with right:
+    st.subheader("Legend (global)")
     render_global_legend()
-    st.altair_chart(chart_q23(dir_year_merged, selected_year, show_total, show_term), width="stretch")
-    st.altair_chart(chart_q6(df_merged, selected_year, selected_dir), width="stretch")
+
+    st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
+
+    st.subheader("Q2/Q3 — Grants & terminated per directorate")
+    st.altair_chart(
+        chart_q23(dir_year_merged, selected_year, show_total, show_term),
+        width="stretch"
+    )
+
+    st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
+
+    st.subheader("Q6 — Award amount vs collaboration (Year + Directorate)")
+    st.altair_chart(
+        chart_q6(df_merged, selected_year, selected_dir),
+        width="stretch"
+    )
+
 
 st.caption("Blue encodes Total/Active grants. Red encodes Terminated/Cancelled grants. Global legend applies across views.")
