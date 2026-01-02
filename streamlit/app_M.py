@@ -214,7 +214,7 @@ def chart_q1(state_year: pd.DataFrame, year: int, selected_state: str) -> alt.Ch
         .encode(
             longitude="lon:Q",
             latitude="lat:Q",
-            size=alt.Size("n_grants:Q", scale=alt.Scale(range=[60, 2000]), legend=None),
+            size=alt.Size("n_grants:Q", scale=alt.Scale(range=[40, 1000]), legend=None),
             color=alt.Color("n_grants:Q", scale=alt.Scale(range=[COL_BG, "#AFC6D9", COL_TOTAL]), legend=None),
             tooltip=[
                 alt.Tooltip("state_name:N", title="State"),
@@ -236,8 +236,8 @@ def chart_q1(state_year: pd.DataFrame, year: int, selected_state: str) -> alt.Ch
     TITLE_X = -75     # titel lidt længere til venstre end boblerne
     LABEL_DX = 22     # god afstand mellem boble og tekst
 
-    LEG_Y0 = 65       # lidt længere nede for luft under titlen
-    STEP  = 42        # mere luft mellem boblerne
+    LEG_Y0 = 45       # lidt længere nede for luft under titlen
+    STEP  = 35        # mere luft mellem boblerne
 
 
     legend_title = (
@@ -254,7 +254,7 @@ def chart_q1(state_year: pd.DataFrame, year: int, selected_state: str) -> alt.Ch
         .encode(
             x=alt.value(LEG_X),
             y=alt.Y("y_pos:Q", axis=None, scale=None),
-            size=alt.Size("n_grants:Q", scale=alt.Scale(range=[60, 2000]), legend=None),
+            size=alt.Size("n_grants:Q", scale=alt.Scale(range=[40, 1000]), legend=None),
             color=alt.Color("n_grants:Q", scale=alt.Scale(range=[COL_BG, "#AFC6D9", COL_TOTAL]), legend=None),
         )
     )
@@ -263,7 +263,7 @@ def chart_q1(state_year: pd.DataFrame, year: int, selected_state: str) -> alt.Ch
         alt.Chart(legend_df)
         .transform_window(idx="row_number()")
         .transform_calculate(y_pos=f"{LEG_Y0} + (datum.idx-1)*{STEP}")
-        .mark_text(align="left", dx=18, fontSize=10)
+        .mark_text(align="left", dx=32, fontSize=10)
         .encode(
             x=alt.value(LEG_X),
             y=alt.Y("y_pos:Q", axis=None, scale=None),
@@ -476,7 +476,6 @@ def chart_q6(df_merged: pd.DataFrame, year: int, directorate: str, selected_stat
         raise KeyError("df_merged missing columns for Q6: " + ", ".join(missing))
 
     df = df_merged.copy()
-
     df["awd_amount"] = pd.to_numeric(df["awd_amount"], errors="coerce")
     df["n_pi"] = pd.to_numeric(df["n_pi"], errors="coerce")
     df["inst_state_code"] = df["inst_state_code"].astype(str).str.upper()
@@ -486,13 +485,16 @@ def chart_q6(df_merged: pd.DataFrame, year: int, directorate: str, selected_stat
     base = (
         alt.Chart(df)
         .transform_filter(alt.datum.year == year)
-        .transform_filter(alt.datum.dir_abbr == directorate)
         .transform_filter(alt.datum.awd_amount != None)
         .transform_filter(alt.datum.n_pi != None)
         .transform_filter(alt.datum.awd_amount > 0)
         .transform_filter(alt.datum.n_pi >= 1)
         .transform_filter(alt.datum.n_pi <= 15)
     )
+
+  
+    if directorate != "All":
+        base = base.transform_filter(f"datum.dir_abbr == '{directorate}'")
 
     if selected_state != "All":
         base = base.transform_filter(f"datum.inst_state_code == '{selected_state}'")
@@ -521,6 +523,7 @@ def chart_q6(df_merged: pd.DataFrame, year: int, directorate: str, selected_stat
                 alt.Tooltip("awd_id:N", title="Award ID"),
                 alt.Tooltip("inst_name:N", title="Institution"),
                 alt.Tooltip("inst_state_code:N", title="State"),
+                alt.Tooltip("dir_abbr:N", title="Directorate"),
                 alt.Tooltip("year:O", title="Year"),
                 alt.Tooltip("n_pi:Q", title="Number of PIs"),
                 alt.Tooltip("awd_amount:Q", title="Award amount", format=",.0f"),
@@ -546,13 +549,15 @@ dirs = sorted(pd.Series(df_merged["dir_abbr"]).dropna().astype(str).unique().tol
 states = ["All"] + sorted(pd.Series(df_merged["state_x"]).dropna().astype(str).unique().tolist())
 
 st.sidebar.header("Filters")
+
 selected_year = st.sidebar.selectbox("Year", options=years, index=len(years) - 1)
+
+# Defaults to "All"
 selected_state = st.sidebar.selectbox("State", options=states, index=0)
-default_dir = "BIO"
-dir_index = dirs.index(default_dir) if default_dir in dirs else 0
+
+# Defaults to "All"
 dirs_ui = ["All"] + dirs
-dir_index = dirs_ui.index(default_dir) if default_dir in dirs_ui else 0
-selected_dir = st.sidebar.selectbox("Directorate", options=dirs_ui, index=dir_index)
+selected_dir = st.sidebar.selectbox("Directorate", options=dirs_ui, index=0)
 
 show_total = st.sidebar.checkbox("Show total (blue)", value=True)
 show_term = st.sidebar.checkbox("Show terminated (red)", value=True)
@@ -594,4 +599,4 @@ with right:
 
 
 
-st.caption("Blue encodes Total/Active grants. Red encodes Terminated/Cancelled grants. Global legend applies across views.")
+st.caption("This visualization was created by Matilde and Steffen as part of the Information Visualization course at UPC (2025). Data source: NSF Grants dataset.")
