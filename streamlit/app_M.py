@@ -539,14 +539,6 @@ st.title("Project 2 — Final visualization (Q1–Q6)")
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-st.write("APP FILE:", Path(__file__).resolve())
-st.write("REPO_ROOT:", REPO_ROOT)
-st.write("DATA DIR EXISTS:", (REPO_ROOT / "data").exists())
-if (REPO_ROOT / "data").exists():
-    st.write("FILES IN data/:", [p.name for p in (REPO_ROOT / "data").glob("*")])
-    st.write("MATCH nsf_grants_*.csv:", [p.name for p in (REPO_ROOT / "data").glob("nsf_grants_*.csv")])
-
-
 
 df_merged = load_data(REPO_ROOT)
 _ = load_capitals()
