@@ -29,13 +29,13 @@ logs/
 *.log
 
 # Data files (raw / large)
-data/
-*.csv
-*.tsv
-*.xlsx
-*.xls
-*.parquet
-*.h5
+data/*
+!data/nsf_grants_*.csv
+!data/nsf_grants_all_merged.csv
+!data/output.csv
+!data/nsf_terminations_airtable.csv
+!data/2302088.json
+
 
 # Environment / secrets
 .env
