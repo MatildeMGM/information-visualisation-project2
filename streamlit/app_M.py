@@ -185,7 +185,7 @@ def render_global_legend():
 def chart_q1(state_year: pd.DataFrame, year: int, selected_state: str) -> alt.Chart:
     states_topo = alt.topo_feature(data.us_10m.url, "states")
 
-    # --- base map (set width+height so overlay coords behave) ---
+    #  base map (set width+height so overlay coords behave) 
     base_map = (
         alt.Chart(states_topo)
         .mark_geoshape(fill=COL_BG, stroke="white")
@@ -193,7 +193,7 @@ def chart_q1(state_year: pd.DataFrame, year: int, selected_state: str) -> alt.Ch
         .properties(width=420, height=260)
     )
 
-    # --- bubble map data (NOW reacts to state filter) ---
+    # bubble map data (NOW reacts to state filter) 
     q1_base = alt.Chart(state_year).transform_filter(alt.datum.year == year)
 
     if selected_state != "All":
@@ -228,16 +228,16 @@ def chart_q1(state_year: pd.DataFrame, year: int, selected_state: str) -> alt.Ch
 
     q1_map = (base_map + points)
 
-    # --- bubble legend (visible inside chart; no negative x so it won't clip) ---
+    # bubble legend (visible inside chart; no negative x so it won't clip) 
     legend_ticks = [0, 250, 400, 800, 1000]
     legend_df = pd.DataFrame({"n_grants": legend_ticks})
 # Legend positioning (recommended)
-    LEG_X   = -55     # flyt hele boblelegenden tydeligt til venstre
-    TITLE_X = -75     # titel lidt længere til venstre end boblerne
-    LABEL_DX = 22     # god afstand mellem boble og tekst
+    LEG_X   = -55    
+    TITLE_X = -75    
+    LABEL_DX = 22   
 
-    LEG_Y0 = 45       # lidt længere nede for luft under titlen
-    STEP  = 35        # mere luft mellem boblerne
+    LEG_Y0 = 45      
+    STEP  = 35        
 
 
     legend_title = (
